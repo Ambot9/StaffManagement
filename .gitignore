@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/*.db
+.DS_Store
+.idea/
+Backend/.github/
+*.user
+*.suo
