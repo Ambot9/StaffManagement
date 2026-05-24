@@ -28,8 +28,8 @@ public class StaffsApiIntegrationTests
     [TearDown]
     public void TearDown()
     {
-        _client.Dispose();
-        _factory.Dispose();
+        _client?.Dispose();
+        _factory?.Dispose();
     }
 
     [Test]
@@ -166,12 +166,6 @@ public class StaffManagementApiFactory : WebApplicationFactory<Program>
                 var connection = serviceProvider.GetRequiredService<DbConnection>();
                 options.UseSqlite(connection);
             });
-
-            using var serviceProvider = services.BuildServiceProvider();
-            using var scope = serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-            dbContext.Database.EnsureCreated();
         });
     }
 
