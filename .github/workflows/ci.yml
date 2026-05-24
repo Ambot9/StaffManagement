@@ -7,8 +7,9 @@ on:
     branches: [ main, master ]
 
 jobs:
-  backend:
+  build-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -19,28 +20,21 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore backend
-        run: dotnet restore Backend/Backend.sln
-
-      - name: Build backend
-        run: dotnet build Backend/Backend.sln --configuration Release --no-restore
-
-      - name: Test backend
-        run: dotnet test Backend/Backend.sln --configuration Release --no-build --verbosity normal
-
-  frontend:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 25
           cache: npm
           cache-dependency-path: Frontend/package-lock.json
+
+      - name: Restore backend
+        run: dotnet restore Backend/StaffManagement.Tests/StaffManagement.Tests.csproj
+
+      - name: Build backend API
+        run: dotnet build Backend/StaffManagement/StaffManagement.csproj --configuration Release --no-restore
+
+      - name: Test backend
+        run: dotnet test Backend/StaffManagement.Tests/StaffManagement.Tests.csproj --configuration Release --no-restore --verbosity normal
 
       - name: Install frontend dependencies
         run: npm ci
@@ -52,36 +46,6 @@ jobs:
 
       - name: Build frontend
         run: npm run build
-        working-directory: Frontend
-
-  e2e:
-    runs-on: ubuntu-latest
-    needs: [ backend, frontend ]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 25
-          cache: npm
-          cache-dependency-path: Frontend/package-lock.json
-
-      - name: Restore backend
-        run: dotnet restore Backend/Backend.sln
-
-      - name: Build backend
-        run: dotnet build Backend/Backend.sln --configuration Release --no-restore
-
-      - name: Install frontend dependencies
-        run: npm ci
         working-directory: Frontend
 
       - name: Run end-to-end tests
