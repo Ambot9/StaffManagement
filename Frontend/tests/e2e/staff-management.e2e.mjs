@@ -89,6 +89,7 @@ function startProcess(command, args, cwd) {
   const logs = []
   const child = spawn(command, args, {
     cwd,
+    detached: process.platform !== 'win32',
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: false,
   })
@@ -135,10 +136,24 @@ async function stopProcess(child) {
     return
   }
 
-  child.kill('SIGTERM')
+  if (process.platform === 'win32') {
+    child.kill('SIGTERM')
+  } else {
+    process.kill(-child.pid, 'SIGTERM')
+  }
 
   await Promise.race([
     once(child, 'exit'),
-    delay(5000).then(() => child.kill('SIGKILL')),
+    delay(5000).then(() => {
+      if (child.exitCode !== null) {
+        return
+      }
+
+      if (process.platform === 'win32') {
+        child.kill('SIGKILL')
+      } else {
+        process.kill(-child.pid, 'SIGKILL')
+      }
+    }),
   ])
 }
