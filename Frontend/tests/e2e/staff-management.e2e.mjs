@@ -6,12 +6,12 @@ import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
 
 const frontendUrl = 'http://127.0.0.1:5173'
-const backendUrl = 'http://localhost:5137'
+const backendUrl = 'http://127.0.0.1:5137'
 
 test('staff management end-to-end flow through frontend proxy', async () => {
   const backend = startProcess(
     'dotnet',
-    ['run', '--no-build', '--urls', backendUrl],
+    ['run', '--configuration', 'Release', '--no-build', '--no-launch-profile', '--urls', backendUrl],
     '../Backend/StaffManagement',
   )
 
@@ -22,8 +22,9 @@ test('staff management end-to-end flow through frontend proxy', async () => {
   )
 
   try {
+    await waitForOk(`${backendUrl}/api/Staffs`, backend)
     await waitForOk(`${frontendUrl}/`)
-    await waitForOk(`${frontendUrl}/api/Staffs`)
+    await waitForOk(`${frontendUrl}/api/Staffs`, frontend)
 
     const pageResponse = await fetch(`${frontendUrl}/`)
     const pageHtml = await pageResponse.text()
@@ -83,24 +84,32 @@ test('staff management end-to-end flow through frontend proxy', async () => {
 })
 
 function startProcess(command, args, cwd) {
+  const logs = []
   const child = spawn(command, args, {
     cwd,
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe'],
     shell: false,
   })
 
+  child.stdout.on('data', (data) => logs.push(data.toString()))
+  child.stderr.on('data', (data) => logs.push(data.toString()))
   child.once('error', (error) => {
     throw error
   })
 
+  child.logs = logs
   return child
 }
 
-async function waitForOk(url) {
+async function waitForOk(url, child) {
   const startedAt = Date.now()
   let lastError
 
   while (Date.now() - startedAt < 30000) {
+    if (child && child.exitCode !== null) {
+      throw new Error(`${url} was not ready because process exited.\n${child.logs.join('')}`)
+    }
+
     try {
       const response = await fetch(url)
 
