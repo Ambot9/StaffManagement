@@ -78,8 +78,10 @@ test('staff management end-to-end flow through frontend proxy', async () => {
 
     assert.equal(deleteResponse.status, 204)
   } finally {
-    stopProcess(frontend)
-    stopProcess(backend)
+    await Promise.all([
+      stopProcess(frontend),
+      stopProcess(backend),
+    ])
   }
 })
 
